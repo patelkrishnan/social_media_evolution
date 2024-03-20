@@ -1,0 +1,223 @@
+---
+title: "Unveiling the Evolution: A Decade of Social Media Platform Trends"
+author: "Krishna Patel"
+date: "January 21, 2024"
+output:
+  html_document:
+    code_download: true
+    fig_caption: yes
+    theme: lumen
+    toc: yes
+    toc_depth: 2
+    df_print: kable
+    toc_float:
+      collapsed: no
+---
+
+```{r, message=FALSE}
+# Required packages. Do not delete.
+library(tidyverse)
+library(mosaic)
+library(ggplot2)
+library(zoo)
+library(lubridate)
+
+```
+
+# Big-picture
+
+## Research Question
+
+> In this infographic design, I will provide insights into the trends and characteristics of various social media platforms by analyzing their market share from 2009 to 2023. I will use data from the social media popularity dataset on Kaggle, which contains the percentage of share in the social media market for different platforms since 2009.
+
+* * *
+
+# Data
+
+## Description of data
+
+> The social media popularity dataset is a collection of data on the percentage of share in the social media market for different platforms since 2009. It contains monthly data for 23 platforms, such as Facebook, Twitter, YouTube, Instagram, etc (for a total of 178 data points). The data was obtained from Statcounter, a web analytics service that tracks the usage and trends of various websites and applications. The data is available on Kaggle, a platform for data science and machine learning competitions and projects.
+
+## Load data into R
+
+```{r, message = FALSE, warning = FALSE}
+social_media <- read.csv("~/Downloads/github/social_media_evolution/social_media.csv")
+# first 10 rows
+head(social_media, 10)
+```
+
+* * *
+
+# Variables
+
+```{r, message = FALSE, warning = FALSE}
+names(social_media)
+```
+
+The variables I used in my infographic design are:
+
+1. Date
+2. Twitter
+3. Youtube
+4. LinkedIn
+5. Facebook
+
+
+```{r}
+subset_data <- social_media[, c("Facebook", "Twitter", "YouTube", "LinkedIn", "Date")]
+selected_media <- subset_data[, c("Twitter", "YouTube", "LinkedIn", "Facebook")]
+
+# Bar graph for average popularity of each social media selected
+average_percentage <- colMeans(selected_media)
+average_data <- data.frame(Platform = names(average_percentage), Average_Percentage = average_percentage)
+
+# Print the average data values
+print(average_data)
+
+# Plot the graph
+ggplot(average_data, aes(x = "", y = Average_Percentage, fill = Platform)) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  labs(title = "Average Percentage Share in Selected Social Media Platforms",
+       fill = "Social Media Platforms",
+       y = "Average Percentage Share") +
+  theme(panel.background = element_rect(fill = "aliceblue")) +
+  scale_fill_brewer(palette = "Set2")
+
+```
+
+> Among the platforms, Facebook stands out with the highest average percentage share at approximately 69.21%, indicating a dominant presence in terms of user engagement. Twitter follows with an average percentage share of approximately 7.27%, while YouTube and LinkedIn exhibit lower average shares at around 3.77% and 0.22%, respectively. These percentages offer insights into the relative popularity and user engagement levels on each platform, with Facebook notably capturing the majority of the overall engagement.
+
+* * *
+
+# Data Analysis
+
+## Summary Statistics
+
+```{r, message = FALSE, warning = FALSE}
+subset_data <- social_media[, c("Facebook", "Twitter", "YouTube", "LinkedIn", "Date")]
+
+facebook_stat <- favstats(~ Facebook, data = subset_data)
+print(facebook_stat)
+
+# Twitter
+twitter_stat <- favstats(~ Twitter, data = subset_data)
+print(twitter_stat)
+
+# Youtube
+youtube_stat <- favstats(~ YouTube, data = subset_data)
+print(youtube_stat)
+
+# LinkedIn
+linkedin_stat <- favstats(~ LinkedIn, data = subset_data)
+print(linkedin_stat)
+
+```
+
+> The descriptive statistics offer a comprehensive overview of engagement metrics for four prominent social media platforms: Facebook, Twitter, YouTube, and LinkedIn. In the case of Facebook, the engagement values span from a minimum of 0 to a maximum of 87.83, with a median value of 68.935. Twitter exhibits a range from 0 to 15.48, with a median engagement of 6.84. YouTube's engagement statistics reveal a range from 0 to 11.04, with a median of 3.845. LinkedIn's engagement metrics range from 0 to 0.55, with a median value of 0.22. The mean values, representing the average engagement, are 69.21 for Facebook, 7.27 for Twitter, 3.77 for YouTube, and 0.22 for LinkedIn. Standard deviation measures indicate the dispersion around the mean, with values of 12.72, 2.55, 2.67, and 0.12 for Facebook, Twitter, YouTube, and LinkedIn, respectively. These statistics, based on 178 observations for each platform, provide valuable insights into the central tendency, variability, and distribution of engagement levels across the specified social media platforms.
+
+## Additional Analyses
+
+```{r, message = FALSE, warning = FALSE}
+
+# Correlation between different social media platforms
+selected_media <- subset_data[, c("Twitter", "YouTube", "LinkedIn", "Facebook")]
+correlation_matrix <- cor(selected_media)
+print(correlation_matrix)
+
+ggplot(data = reshape2::melt(correlation_matrix), aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, limit = c(-1, 1), space = "Lab") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  coord_fixed() +
+  labs(title = "Correlation Heatmap of Social Media Platforms",
+       x = "Social Media Platforms", y = "Social Media Platforms")
+
+# Scatterplot for each Social media platform over time
+# Convert 'Date' column to Date type
+social_media$Date <- as.Date(as.yearmon(social_media$Date, format = "%Y-%m"))
+
+# Create a line plot for LinkedIn engagement evolution
+ggplot(social_media, aes(x = Date, y = LinkedIn, group = 1, color = factor(year(Date)))) +
+  geom_line(color = "purple", size = 1.0) + 
+  labs(title = "LinkedIn Engagement Evolution (2009-2022)",
+       x = "Date",
+       y = "Engagement on LinkedIn (% share)",
+       color = "Year") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_color_brewer(palette = "Set1") +  
+  theme(panel.background = element_rect(fill = "bisque"))  
+
+subset_data_linkedin <- subset(social_media, year(Date) %in% seq(2009, 2022, 1))
+write.csv(subset_data[, c("Date", "LinkedIn")], "linkedin_engagement_data.csv", row.names = FALSE)
+
+# Create a line plot for Facebook engagement evolution
+ggplot(social_media, aes(x = Date, y = Facebook, group = 1)) +
+  geom_line(color = "darkgreen", size = 1.0) +
+  labs(title = "Facebook Engagement Evolution (2009-2022)",
+       x = "Date",
+       y = "Engagement on Facebook (% share)") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  theme(panel.background = element_rect(fill = "bisque"))
+
+# Create a line plot for YouTube engagement evolution
+ggplot(social_media, aes(x = Date, y = YouTube, group = 1)) +
+  geom_line(color = "darkblue", size = 1.0) +
+  labs(title = "YouTube Engagement Evolution (2009-2022)",
+       x = "Date",
+       y = "Engagement on YouTube (% share)") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  theme(panel.background = element_rect(fill = "bisque"))
+
+# Create a line plot for Twitter engagement evolution
+ggplot(social_media, aes(x = Date, y = Twitter, group = 1)) +
+  geom_line(color = "indianred", size = 1.0) +
+  labs(title = "Twitter Engagement Evolution (2009-2022)",
+       x = "Date",
+       y = "Engagement on Twitter (% share)") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  theme(panel.background = element_rect(fill = "bisque"))
+
+```
+
+
+
+> The provided R code conducts exploratory data analysis on social media engagement data. It begins by calculating the correlation matrix between Twitter, YouTube, LinkedIn, and Facebook, visualizing the correlations in a heatmap. The heatmap provides insights into the relationships between these platforms, with color gradients indicating the strength and direction of correlations.
+
+> Notably, there is a moderate positive correlation between Twitter and LinkedIn, as well as between YouTube and LinkedIn. Conversely, a weak negative correlation is observed between Twitter and Facebook, YouTube and Facebook, and LinkedIn and Facebook. These insights suggest some level of interdependence in engagement trends across certain platforms, but the correlations are not strong, indicating that the dynamics influencing engagement on one platform may not consistently mirror those on another. 
+
+> Following this, the code generates individual line plots for the evolution of engagement on LinkedIn, Facebook, and YouTube over the years. Each line plot represents the percentage share of engagement for the respective platform from 2009 to 2022.
+
+* * *
+
+# Infographic
+
+
+### (b)
+Embed your design here:
+
+**<div style="position: relative; width: 100%; height: 0; padding-top: 250.0000%;
+ padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 1.6em; margin-bottom: 0.9em; overflow: hidden;
+ border-radius: 8px; will-change: transform;">
+  <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"
+    src="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAF7xhH4YBc&#x2F;watch?embed" allowfullscreen="allowfullscreen" allow="fullscreen"data-external="1">
+  </iframe>
+</div>
+<a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAF7xhH4YBc&#x2F;watch?utm_content=DAF7xhH4YBc&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">Social Media Popularity Report</a> by Patel Krishna**
+
+### (c)
+Provide a brief description of your data visualization process.
+
+> At the beginning of the infographic, there's a quick summary about the average share of different social media platforms. LinkedIn has the smallest share at 0.22%, and Facebook has the biggest share at a whopping 69.21%. This gives us a quick idea before we dive into looking at how social media engagement has changed over the years.
+
+> At the middle part of the infographic, there are line graphs that show how much each social media platform shares have evolved from 2009 to 2023. The sizes of the logos match how big or small their share is. Facebook's logo is the largest, showing it has the most significant share. When we study the trends, it's clear that Facebook has been consistently growing or staying stable, suggesting people keep engaging with it. On the flip side, other platforms go up and down, and some even show big decreases. This visual representation not only tells us how shares have changed but also shows us the different paths each social media platform has taken.
+
+
+* * *
+
+# References
+
+1. https://www.kaggle.com/datasets/michau96/social-media-popularity-2009-2023?resource=download
+
+* * *
